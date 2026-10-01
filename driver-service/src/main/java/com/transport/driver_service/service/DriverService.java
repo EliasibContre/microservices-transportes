@@ -8,8 +8,10 @@ import com.transport.driver_service.repository.DriverRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
@@ -57,5 +59,14 @@ public class DriverService {
                 .log("Conductores activos consultados");
 
         return drivers;
+    }
+
+    @Transactional(readOnly = true)
+    public DriverResponse findById(UUID id) {
+        return driverRepository.findById(id)
+                .map(driverMapper::toResponse)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "No existe el conductor con ID " + id));
     }
 }

@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/drivers")
@@ -36,4 +37,11 @@ public class DriverController {
     public List<DriverResponse> findActive(){
         return driverService.findActive();
     }
+
+
+    @GetMapping("/{id}")
+    public DriverResponse findById(@PathVariable UUID id) {
+        return driverService.findById(id);
+    }
+
 }
