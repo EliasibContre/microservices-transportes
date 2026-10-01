@@ -10,6 +10,8 @@ import com.transport.order_service.mapper.OrderMapper;
 import com.transport.order_service.repository.OrderRepository;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,9 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class OrderService {
+
+    private static final Logger log = LoggerFactory.getLogger(OrderService.class);
+
     private final OrderRepository orderRepository;
     private  final OrderMapper orderMapper;
 
@@ -105,7 +110,15 @@ public class OrderService {
 
         order.setUpdatedAt(now);
 
-        return orderMapper.toResponse(orderRepository.save(order));
+        Order saved = orderRepository.save(order);
+
+        log.atInfo()
+                .addKeyValue("event", "order_created")
+                .addKeyValue("orderId", saved.getId().toString())
+                .addKeyValue("status", saved.getStatus().name())
+                .log("Orden creada");
+
+        return orderMapper.toResponse(saved);
     }
 
 
@@ -117,14 +130,30 @@ public class OrderService {
         OrderStatus currentStatus = order.getStatus();
 
         if (!canTransition(currentStatus, nextStatus)) {
-            throw new InvalidOrderStatusTransitionException(
-                    currentStatus, nextStatus);
+            log.atWarn()
+                    .addKeyValue("event", "order_status_change_rejected")
+                    .addKeyValue("orderId", id.toString())
+                    .addKeyValue("currentStatus", currentStatus.name())
+                    .addKeyValue("requestedStatus", nextStatus.name())
+                    .log("Transición de estado rechazada");
+
+            throw new InvalidOrderStatusTransitionException(currentStatus,
+                    nextStatus);
         }
 
         order.setStatus(nextStatus);
         order.setUpdatedAt(OffsetDateTime.now(ZoneOffset.UTC));
 
-        return orderMapper.toResponse(orderRepository.save(order));
+        Order saved = orderRepository.save(order);
+
+        log.atInfo()
+                .addKeyValue("event", "order_status_changed")
+                .addKeyValue("orderId", id.toString())
+                .addKeyValue("previousStatus", currentStatus.name())
+                .addKeyValue("newStatus", nextStatus.name())
+                .log("Estado de orden actualizado");
+
+        return orderMapper.toResponse(saved);
     }
 
 
