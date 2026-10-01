@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: microservices-transport-postgres
+    environment:
+      POSTGRES_USER: transport_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD?Define DB_PASSWORD en .env}
+      POSTGRES_DB: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - microservices_postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+volumes:
+  microservices_postgres_data:
+
+
