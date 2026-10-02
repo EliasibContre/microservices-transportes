@@ -1,0 +1,37 @@
+server:
+  port: 8090
+
+spring:
+  config:
+    import: "optional:file:./.env[.properties]"
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            - id: auth-service
+              uri: lb://auth-service
+              predicates:
+                - Path=/api/auth/**
+
+            - id: order-service
+              uri: lb://order-service
+              predicates:
+                - Path=/api/orders,/api/orders/**
+
+            - id: driver-service
+              uri: lb://driver-service
+              predicates:
+                - Path=/api/drivers,/api/drivers/**
+
+            - id: assignment-service
+              uri: lb://assignment-service
+              predicates:
+                - Path=/api/assignments,/api/assignments/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone:  "${EUREKA_URL:http://discovery-server:8761/eureka/}"

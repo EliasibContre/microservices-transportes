@@ -1,0 +1,118 @@
+services:
+
+  discovery-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: discovery-server
+    ports:
+      - "8761:8761"
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: auth-service
+    depends_on:
+      - discovery-server
+    environment:
+      API_USERNAME: ${API_USERNAME:?Define API_USERNAME en .env}
+      API_PASSWORD: ${API_PASSWORD:?Define API_PASSWORD en .env}
+      JWT_SECRET_BASE64: ${JWT_SECRET_BASE64:?Define JWT_SECRET_BASE64 en .env}
+    ports:
+      - "8081:8081"
+
+  order-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: order-service
+    depends_on:
+      discovery-server:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en .env}
+      JWT_SECRET_BASE64: ${JWT_SECRET_BASE64:?Define JWT_SECRET_BASE64 en .env}
+    ports:
+      - "8082:8082"
+
+  driver-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: driver-service
+    depends_on:
+      discovery-server:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en .env}
+      JWT_SECRET_BASE64: ${JWT_SECRET_BASE64:?Define JWT_SECRET_BASE64 en .env}
+    ports:
+      - "8083:8083"
+
+  assignment-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: assignment-service
+    depends_on:
+      discovery-server:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      order-service:
+        condition: service_started
+      driver-service:
+        condition: service_started
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en .env}
+      JWT_SECRET_BASE64: ${JWT_SECRET_BASE64:?Define JWT_SECRET_BASE64 en .env}
+    ports:
+      - "8084:8084"
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: api-gateway
+    depends_on:
+      - discovery-server
+      - auth-service
+      - order-service
+      - driver-service
+      - assignment-service
+    ports:
+      - "8090:8090"
+
+  postgres:
+    image: postgres:17
+    container_name: microservices-transport-postgres
+    environment:
+      POSTGRES_USER: transport_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD?Define DB_PASSWORD en .env}
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -h 127.0.0.1 -U transport_user
+            -d postgres" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    ports:
+      - "5434:5432"
+    volumes:
+      - microservices_postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+volumes:
+  microservices_postgres_data:
+
+
