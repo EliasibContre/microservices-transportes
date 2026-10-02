@@ -13,6 +13,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.stream.Collectors;
 
@@ -30,6 +31,13 @@ public class GlobalExceptionHandler {
             case BUSINESS_RULE -> HttpStatus.CONFLICT;
             case INVALID_FILE -> HttpStatus.BAD_REQUEST;
         };
+
+        log.atWarn()
+                .addKeyValue("event", "assignment_request_rejected")
+                .addKeyValue("reason", ex.reason().name())
+                .addKeyValue("status", status.value())
+                .addKeyValue("path", request.getRequestURI())
+                .log("Solicitud de asignación rechazada");
 
         return problem(status, ex.reason().name(),
                 ex.getMessage(), request);
@@ -91,6 +99,20 @@ public class GlobalExceptionHandler {
                         "DEPENDENCY_ERROR",
                 "No se pudo consultar el servicio de órdenes o conductores",
                 request);
+    }
+
+    @ExceptionHandler(UncheckedIOException.class)
+    public ProblemDetail fileReadFailure(
+            UncheckedIOException ex, HttpServletRequest request) {
+        log.atError()
+                .addKeyValue("event", "assignment_file_read_failed")
+                .addKeyValue("path", request.getRequestURI())
+                .setCause(ex)
+                .log("No se pudo leer el archivo");
+
+        return problem(HttpStatus.INTERNAL_SERVER_ERROR,
+                "FILE_READ_ERROR",
+                "No se pudo procesar el archivo", request);
     }
 
     private ProblemDetail problem(

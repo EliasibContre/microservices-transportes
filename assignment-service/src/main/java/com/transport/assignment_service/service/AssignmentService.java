@@ -11,6 +11,8 @@ import com.transport.assignment_service.mapper.AssignmentMapper;
 import com.transport.assignment_service.repository.AssignmentRepository;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +23,9 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class AssignmentService {
+
+
+    private static final Logger log = LoggerFactory.getLogger(AssignmentService.class);
 
     private final AssignmentRepository assignmentRepository;
     private final OrderClient orderClient;
@@ -58,8 +63,16 @@ public class AssignmentService {
 
         assignment.setAssignedAt(OffsetDateTime.now(ZoneOffset.UTC));
 
-        return assignmentMapper.toResponse(
-                assignmentRepository.saveAndFlush(assignment));
+        Assignment saved = assignmentRepository.saveAndFlush(assignment);
+
+        log.atInfo()
+                .addKeyValue("event", "assignment_created")
+                .addKeyValue("assignmentId", saved.getId().toString())
+                .addKeyValue("orderId", saved.getOrderId().toString())
+                .addKeyValue("driverId", saved.getDriverId().toString())
+                .log("Conductor asignado a la orden");
+
+        return assignmentMapper.toResponse(saved);
     }
 
     private OrderClient.OrderSnapshot findOrder(UUID id) {

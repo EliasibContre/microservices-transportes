@@ -7,6 +7,8 @@ import com.transport.assignment_service.repository.AssignmentRepository;
 import com.transport.assignment_service.exception.ApplicationException;
 import com.transport.assignment_service.exception.ApplicationException.Reason;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,6 +25,9 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class AssignmentFileService {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(AssignmentFileService.class);
 
     private static final byte[] PDF_HEADER =
             "%PDF-".getBytes(StandardCharsets.US_ASCII);
@@ -90,8 +95,19 @@ public class AssignmentFileService {
         assignmentFile.setContent(content);
         assignmentFile.setUploadedAt(OffsetDateTime.now(ZoneOffset.UTC));
 
-        return assignmentMapper.toFileResponse(
-                assignmentFileRepository.save(assignmentFile));
+        AssignmentFile saved =
+                assignmentFileRepository.save(assignmentFile);
+
+        log.atInfo()
+                .addKeyValue("event", "assignment_file_uploaded")
+                .addKeyValue("assignmentId",
+                        saved.getAssignmentId().toString())
+                .addKeyValue("fileId", saved.getId().toString())
+                .addKeyValue("contentType", saved.getContentType())
+                .addKeyValue("sizeBytes", saved.getContent().length)
+                .log("Archivo agregado a la asignación");
+
+        return assignmentMapper.toFileResponse(saved);
     }
 
     private boolean validFormat(String contentType, String fileName,

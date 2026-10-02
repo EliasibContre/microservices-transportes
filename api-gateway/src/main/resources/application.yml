@@ -2,6 +2,8 @@ server:
   port: 8090
 
 spring:
+  config:
+    import: "optional:file:./.env[.properties]"
   application:
     name: api-gateway
   cloud:
@@ -32,4 +34,4 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone:  "${EUREKA_URL:http://discovery-server:8761/eureka/}"
