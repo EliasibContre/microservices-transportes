@@ -231,7 +231,13 @@ Sustituye los marcadores por UUID reales, conservando las comillas. La respuesta
 
 En Postman, abre **Body → form-data**. Agrega una fila con clave `file`, cambia su tipo de **Text** a **File** y selecciona un archivo. No escribas manualmente el `Content-Type` de la petición: Postman debe construir el `multipart/form-data` con su límite.
 
-Se admiten PDF (`.pdf`), PNG (`.png`) y JPEG (`.jpg` o `.jpeg`). El servicio comprueba el nombre, el tipo MIME y la cabecera real del archivo. La respuesta `201 Created` devuelve los metadatos del archivo, incluido su `id`. El contenido se guarda como `BYTEA` en `assignment_db`. Actualmente no hay endpoint para descargarlo.
+Se admiten PDF (`.pdf`), PNG (`.png`) y JPEG (`.jpg` o `.jpeg`) de hasta 10 MB por archivo. El servicio comprueba el nombre, el tipo MIME y la cabecera real del archivo. La petición completa admite hasta 12 MB. La respuesta `201 Created` devuelve los metadatos, incluido el `id` del archivo, que debes guardar como `FILE_ID`. El contenido se guarda como `BYTEA` en `assignment_db`.
+
+### Descargar un archivo
+
+**GET** `http://localhost:8090/api/assignments/<ASSIGNMENT_ID>/files/<FILE_ID>`
+
+Usa el `assignmentId` de la asignación y el `id` devuelto al subir el archivo. Envía el Bearer Token; en Postman puedes usar **Send and Download** para guardarlo.
 
 ## Swagger / OpenAPI
 
@@ -296,7 +302,7 @@ docker compose up --build -d
 | `403 Forbidden` al pedir el token | Usa POST, Basic Auth y las credenciales `API_USERNAME`/`API_PASSWORD`. |
 | Falla la conexión a PostgreSQL | Confirma que `postgres` está activo y saludable; revisa `docker compose logs postgres` y que `DB_PASSWORD` sea el mismo con el que se creó el volumen. |
 | Faltan tablas | Revisa los logs de `order-service`, `driver-service` o `assignment-service` para detectar errores de Liquibase y consulta `DATABASECHANGELOG` en la base correspondiente. |
-| Un archivo es rechazado | Comprueba que la clave multipart sea `file` y que extensión, MIME y contenido correspondan a PDF, PNG o JPEG. |
+| Un archivo es rechazado | Comprueba que la clave multipart sea `file`, que extensión, MIME y contenido correspondan a PDF, PNG o JPEG y que el archivo no supere 10 MB. Si excede el límite, el servicio responde con `413 Payload Too Large`. |
 
 Los errores de validación y negocio se responden con detalles HTTP; los servicios registran eventos estructurados para ayudar a localizar el problema sin imprimir los archivos ni el JWT.
 
