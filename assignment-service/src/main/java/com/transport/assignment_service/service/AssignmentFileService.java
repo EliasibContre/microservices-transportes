@@ -1,4 +1,5 @@
 package com.transport.assignment_service.service;
+import com.transport.assignment_service.dto.AssignmentFileDownload;
 import com.transport.assignment_service.dto.AssignmentFileResponse;
 import com.transport.assignment_service.entity.AssignmentFile;
 import com.transport.assignment_service.mapper.AssignmentMapper;
@@ -108,6 +109,21 @@ public class AssignmentFileService {
                 .log("Archivo agregado a la asignación");
 
         return assignmentMapper.toFileResponse(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public AssignmentFileDownload download(UUID assignmentId, UUID fileId)
+    {
+        AssignmentFile saved = assignmentFileRepository
+                .findByIdAndAssignmentId(fileId, assignmentId)
+                .orElseThrow(() -> new ApplicationException(
+                        Reason.RESOURCE_NOT_FOUND,
+                        "No existe el archivo en esta asignación"));
+
+        return new AssignmentFileDownload(
+                saved.getFileName(),
+                saved.getContentType(),
+                saved.getContent());
     }
 
     private boolean validFormat(String contentType, String fileName,
