@@ -11,6 +11,35 @@ spring:
       server:
         webmvc:
           routes:
+            - id: order-openapi
+              uri: lb://order-service
+              predicates:
+                - Path=/docs/orders
+              filters:
+                - RewritePath=/docs/orders, /v3/api-docs
+
+            - id: auth-openapi
+              uri: lb://auth-service
+              predicates:
+                - Path=/docs/auth
+              filters:
+                - RewritePath=/docs/auth, /v3/api-docs
+
+            - id: driver-openapi
+              uri: lb://driver-service
+              predicates:
+                - Path=/docs/drivers
+              filters:
+                - RewritePath=/docs/drivers, /v3/api-docs
+
+            - id: assignment-openapi
+              uri: lb://assignment-service
+              predicates:
+                - Path=/docs/assignments
+              filters:
+                - RewritePath=/docs/assignments, /v3/api-docs
+
+
             - id: auth-service
               uri: lb://auth-service
               predicates:
@@ -31,7 +60,22 @@ spring:
               predicates:
                 - Path=/api/assignments,/api/assignments/**
 
+
 eureka:
   client:
     service-url:
       defaultZone:  "${EUREKA_URL:http://discovery-server:8761/eureka/}"
+
+
+springdoc:
+  swagger-ui:
+    disable-swagger-default-url: true
+    urls:
+      - name: Auth
+        url: /docs/auth
+      - name: Orders
+        url: /docs/orders
+      - name: Drivers
+        url: /docs/drivers
+      - name: Assignments
+        url: /docs/assignments
