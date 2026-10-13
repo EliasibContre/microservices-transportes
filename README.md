@@ -121,9 +121,11 @@ docker compose logs -f assignment-service
 
 Los servicios de negocio y autenticación escriben logs JSON con campos como `event`, identificadores y estado. No publiques tokens ni contraseñas en logs o capturas.
 
-## 4. Inicialización de PostgreSQL
+## 4. Inicialización de PostgreSQL y migraciones
 
-Con un volumen **nuevo**, PostgreSQL ejecuta automáticamente los archivos de `database/init/`: crea las tres bases y sus tablas. No se usa Flyway ni hace falta ejecutar `tables.sql` manualmente en el arranque normal. Las aplicaciones usan `spring.jpa.hibernate.ddl-auto=validate`: comprueban que las tablas existan, pero no las crean ni las actualizan.
+Con un volumen **nuevo**, PostgreSQL ejecuta `database/init/databases.sql` para crear `order_db`, `driver_db` y `assignment_db`. Ese script no crea tablas.
+
+Al iniciar, `order-service`, `driver-service` y `assignment-service` aplican sus propios changelogs de Liquibase desde `src/main/resources/db/changelog/db.changelog-master.sql`. Liquibase crea `orders`, `drivers`, `assignments` y `assignment_files` en la base correspondiente y registra los cambios aplicados en `DATABASECHANGELOG`. Después, `spring.jpa.hibernate.ddl-auto=validate` comprueba que la estructura coincida con las entidades; Hibernate no crea ni modifica tablas.
 
 Para comprobar las tablas desde la raíz:
 
@@ -135,7 +137,9 @@ docker compose exec postgres psql -U transport_user -d assignment_db -c '\dt'
 
 Se esperan `orders` en `order_db`, `drivers` en `driver_db` y `assignments` y `assignment_files` en `assignment_db`.
 
-Los scripts de inicialización solo se ejecutan cuando PostgreSQL crea su directorio de datos por primera vez. Si ya existe el volumen, editar los SQL y reiniciar los contenedores **no** vuelve a aplicarlos.
+`databases.sql` solo se ejecuta cuando PostgreSQL crea su directorio de datos por primera vez. Los cambios posteriores en las tablas se agregan como **nuevos changesets** al changelog del servicio propietario; Liquibase los aplica al siguiente arranque y no vuelve a ejecutar los que ya registró. No modifiques un changeset que ya se haya aplicado.
+
+Si conservas un volumen anterior cuyas tablas fueron creadas por el antiguo `tables.sql`, no inicies los servicios con las nuevas migraciones sin planear la transición: las tablas ya existen, pero Liquibase no tiene registrado su changeset inicial. Para datos de prueba puedes recrear el volumen con `docker compose down -v` (consulta la sección «Detener y reiniciar»). Si necesitas conservar datos, primero debes incorporar ese esquema existente a Liquibase.
 
 ## 5. Obtener un token en Postman
 
