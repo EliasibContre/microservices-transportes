@@ -16,7 +16,7 @@ El examen solicita órdenes, conductores, asignaciones, carga de archivos, segur
 | `assignment-service` | Asignaciones y archivos | 8084 |
 | `postgres` | PostgreSQL 17 | 5434 |
 
-Las peticiones de negocio se hacen normalmente a `http://localhost:8090`. Eureka se consulta en `http://localhost:8761`. Los puertos 8081–8084 están publicados también para consultar Swagger o diagnosticar un servicio directamente.
+Las peticiones de negocio se hacen normalmente a `http://localhost:8090`. Eureka se consulta en `http://localhost:8761`. La interfaz Swagger UI central está en `http://localhost:8090/swagger-ui/index.html`; los puertos 8081–8084 siguen publicados para diagnóstico y acceso directo al Swagger de cada servicio.
 
 Hay tres bases lógicas, `order_db`, `driver_db` y `assignment_db`, dentro del mismo contenedor PostgreSQL. Cada servicio usa su propia base; las referencias entre servicios se guardan como UUID, sin claves foráneas entre bases.
 
@@ -235,14 +235,13 @@ Se admiten PDF (`.pdf`), PNG (`.png`) y JPEG (`.jpg` o `.jpeg`). El servicio com
 
 ## Swagger / OpenAPI
 
-Cada servicio expone su propio Swagger UI directamente:
+La interfaz central está disponible en `http://localhost:8090/swagger-ui/index.html`. En el selector superior elige `Auth`, `Orders`, `Drivers` o `Assignments`.
 
-- Autenticación: `http://localhost:8081/swagger-ui/index.html`
-- Órdenes: `http://localhost:8082/swagger-ui/index.html`
-- Conductores: `http://localhost:8083/swagger-ui/index.html`
-- Asignaciones: `http://localhost:8084/swagger-ui/index.html`
+El gateway publica los documentos OpenAPI en `/docs/auth`, `/docs/orders`, `/docs/drivers` y `/docs/assignments`. Cada servicio sigue siendo responsable de generar su propio documento.
 
-El gateway actual enruta `/api/auth/**`, `/api/orders/**`, `/api/drivers/**` y `/api/assignments/**`; **no** enruta las páginas de Swagger. En Swagger de órdenes, conductores y asignaciones, pulsa **Authorize** y pega el JWT. Para obtenerlo desde Swagger de autenticación, usa Basic Auth en el botón **Authorize** y ejecuta `POST /api/auth/token`.
+Para obtener un token, selecciona `Auth`, pulsa **Authorize** e introduce `API_USERNAME` y `API_PASSWORD` como Basic Auth; después ejecuta `POST /api/auth/token`. Para probar órdenes, conductores o asignaciones, selecciona el documento correspondiente y usa **Authorize** con el JWT como Bearer Token. Comprueba que **Request URL** use `localhost:8090`.
+
+Las interfaces individuales siguen disponibles directamente en los puertos 8081–8084 para diagnóstico.
 
 ## Pruebas unitarias
 
