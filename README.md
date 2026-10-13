@@ -28,6 +28,8 @@ Hay tres bases lógicas, `order_db`, `driver_db` y `assignment_db`, dentro del m
 
 No se requiere instalar Java, Maven ni PostgreSQL para levantar los contenedores: el `Dockerfile` compila cada aplicación con Maven y usa Java 17 para ejecutarla. Para ejecutar las pruebas desde la terminal del equipo sí se necesitan Java 17 y Maven.
 
+Las seis aplicaciones se ejecutan sobre `eclipse-temurin:17-jre-alpine` con el usuario `app` (UID/GID `10001`), sin privilegios de root.
+
 ## 1. Obtener el proyecto
 
 Clona el repositorio o descarga su contenido y abre una terminal en la **raíz**, donde están `compose.yaml`, `Dockerfile`, `.env.example` y las carpetas de los servicios.
@@ -275,7 +277,7 @@ Si cambias código Java y quieres reconstruir las imágenes:
 docker compose up --build -d
 ```
 
-**Solo si deseas borrar todos los datos y recrear las bases desde los scripts SQL**, usa:
+**Solo si deseas borrar todos los datos y reconstruir las bases y tablas desde cero**, usa:
 
 ```bash
 docker compose down -v
@@ -294,7 +296,7 @@ docker compose up --build -d
 | `401 Unauthorized` en órdenes, conductores o asignaciones | Envía `Authorization: Bearer <TOKEN_JWT>`; comprueba que no haya expirado. |
 | `403 Forbidden` al pedir el token | Usa POST, Basic Auth y las credenciales `API_USERNAME`/`API_PASSWORD`. |
 | Falla la conexión a PostgreSQL | Confirma que `postgres` está activo y saludable; revisa `docker compose logs postgres` y que `DB_PASSWORD` sea el mismo con el que se creó el volumen. |
-| Faltan tablas | Los scripts solo se ejecutan al crear un volumen nuevo. Revisa los logs de `postgres` antes de considerar un reinicio con `down -v`. |
+| Faltan tablas | Revisa los logs de `order-service`, `driver-service` o `assignment-service` para detectar errores de Liquibase y consulta `DATABASECHANGELOG` en la base correspondiente. |
 | Un archivo es rechazado | Comprueba que la clave multipart sea `file` y que extensión, MIME y contenido correspondan a PDF, PNG o JPEG. |
 
 Los errores de validación y negocio se responden con detalles HTTP; los servicios registran eventos estructurados para ayudar a localizar el problema sin imprimir los archivos ni el JWT.
